@@ -1,4 +1,5 @@
 from scene import *
+from game_menu import MenuScene
 import sound
 import random
 import math
@@ -23,13 +24,33 @@ class Game (Scene):
 		self.timer = 0
 		self.speed = 2.0
 		
+		time_font = ('Avenir Next Condensed', 32)
+		self.time_label = LabelNode('00:00', font=time_font, parent=self)
+		self.time_label.anchor_point = (0.5, 1)
+		self.time_label.position = (self.size.w/2, self.size.h-16)
+		
 		self.player = SpriteNode('spc:PlayerLife1Blue')
-		print("Player Size: ", self.player.size)
 		self.player.anchor_point = (0.5, 0)
 		self.player.position = (self.size.w/2, 16)
 		self.player_target = self.size.w/2
 		self.add_child(self.player)
+		self.highscore = self.load_highscore()
+		self.show_start_menu()
 	
+	def new_game(self):
+		self.lives_left = 3
+		
+	def load_highscore(self):
+		try:
+			with open('.Match3Highscore', 'r') as f:
+				return int(f.read())
+		except:
+			return 0		
+		
+		
+	def new_game(self):
+		self.score = 0
+		
 	def did_change_size(self):
 		pass
 	
@@ -64,9 +85,20 @@ class Game (Scene):
 		player_hitbox = Rect(self.player.position.x-17, 16, 34, 30)
 		for wall in list(self.walls):
 			if wall.frame.intersects(player_hitbox):
-				print("In")
 				self.player.remove_from_parent()
 		
+	def show_start_menu(self):
+		self.paused = True
+		self.menu = MenuScene('Maze Run', 'Highscore: %i' % self.highscore, ['Play'])
+		self.present_modal_scene(self.menu)
+		
+	def menu_button_selected(self, title):
+		if title in ('New Game', 'Play'):
+			self.dismiss_modal_scene()
+			self.menu = None
+			self.paused = False
+			self.new_game()
+	
 	def move_ship(self):
 		dx = self.player_target - self.player.position.x
 		self.player.position += dx, 0
