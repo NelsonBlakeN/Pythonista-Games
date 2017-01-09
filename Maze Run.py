@@ -23,11 +23,12 @@ class Game (Scene):
 			
 		self.timer = 0
 		self.speed = 2.0
-		
+		self.lives_left = 3
 		time_font = ('Avenir Next Condensed', 32)
 		self.time_label = LabelNode('00:00', font=time_font, parent=self)
 		self.time_label.anchor_point = (0.5, 1)
 		self.time_label.position = (self.size.w/2, self.size.h-16)
+		self.start_time = self.t
 		
 		self.player = SpriteNode('spc:PlayerLife1Blue')
 		self.player.anchor_point = (0.5, 0)
@@ -39,6 +40,7 @@ class Game (Scene):
 	
 	def new_game(self):
 		self.lives_left = 3
+		print(self.t)
 		
 	def load_highscore(self):
 		try:
@@ -47,9 +49,9 @@ class Game (Scene):
 		except:
 			return 0		
 		
-		
 	def new_game(self):
 		self.score = 0
+		self.game_over = False
 		
 	def did_change_size(self):
 		pass
@@ -58,6 +60,8 @@ class Game (Scene):
 		self.move_ship()
 		self.update_walls()
 		self.check_wall_collision()
+		sec_in = int(self.t - self.start_time)
+		self.time_label.text = '%02d:%02d' % (sec_in/60, sec_in%60)
 		
 	def update_walls(self):
 		if self.timer % 16 == 0:
@@ -85,7 +89,23 @@ class Game (Scene):
 		player_hitbox = Rect(self.player.position.x-17, 16, 34, 30)
 		for wall in list(self.walls):
 			if wall.frame.intersects(player_hitbox):
-				self.player.remove_from_parent()
+				self.player_crash()
+#				self.player.remove_from_parent()
+#				self.lives_left -= 1
+#				if self.lives_left == 0:
+#					self.end_game()
+	
+	def player_crash(self):
+		self.player.remove_from_parent()
+		self.lives_left -= 1
+		print(self.lives_left)
+		if self.lives_left == 0:
+			self.end_game()
+		else:
+			self.run_action(A.sequence(A.wait(0.5), A.call(self.spawn_player)))
+		
+	def spawn_player(self):
+		self.player = SpriteNode('spc:PlayerLife1Blue')
 		
 	def show_start_menu(self):
 		self.paused = True
