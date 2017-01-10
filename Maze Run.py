@@ -3,6 +3,7 @@ from game_menu import MenuScene
 import sound
 import random
 import math
+import time
 A = Action
 
 class Game (Scene):
@@ -30,31 +31,22 @@ class Game (Scene):
 		self.time_label.position = (self.size.w/2, self.size.h-16)
 		self.start_time = self.t
 		
-		self.player = SpriteNode('spc:PlayerLife1Blue')
-		self.player.anchor_point = (0.5, 0)
-		self.player.position = (self.size.w/2, 16)
-		self.player_target = self.size.w/2
-		self.add_child(self.player)
 		self.highscore = self.load_highscore()
 		self.show_start_menu()
 	
 	def new_game(self):
 		self.lives_left = 3
-		print(self.t)
+		self.score = 0
+		self.game_over = False
+		self.players = []
+		self.spawn_player()
 		
 	def load_highscore(self):
 		try:
 			with open('.Match3Highscore', 'r') as f:
 				return int(f.read())
 		except:
-			return 0		
-		
-	def new_game(self):
-		self.score = 0
-		self.game_over = False
-		
-	def did_change_size(self):
-		pass
+			return 0
 	
 	def update(self):
 		self.move_ship()
@@ -86,26 +78,37 @@ class Game (Scene):
 			tile.position += 0, dy
 			
 	def check_wall_collision(self):
-		player_hitbox = Rect(self.player.position.x-17, 16, 34, 30)
-		for wall in list(self.walls):
-			if wall.frame.intersects(player_hitbox):
-				self.player_crash()
-#				self.player.remove_from_parent()
-#				self.lives_left -= 1
-#				if self.lives_left == 0:
-#					self.end_game()
+		for ship in self.players:
+			if ship.position.x-ship.size[0]/2 < 64:
+				self.player_crash(ship)
+			elif ship.position.x+ship.size[0]/2 > self.size.w-64:
+				self.player_crash(ship)
 	
-	def player_crash(self):
-		self.player.remove_from_parent()
+	def player_crash(self, p):
+		p.remove_from_parent()
+		self.players.remove(p)
 		self.lives_left -= 1
 		print(self.lives_left)
 		if self.lives_left == 0:
 			self.end_game()
 		else:
-			self.run_action(A.sequence(A.wait(0.5), A.call(self.spawn_player)))
+			self.run_action(A.sequence(A.wait(2), A.call(self.spawn_player)))
 		
 	def spawn_player(self):
-		self.player = SpriteNode('spc:PlayerLife1Blue')
+		new_player = SpriteNode('spc:PlayerLife1Blue', parent=self)
+		new_player.anchor_point = (0.5, 0)
+		new_player.position = (self.size.w/2, 16)
+		print("Spawn player at "+str(new_player.position))
+		self.player_target = self.size.w/2
+		self.players.append(new_player)
+		
+	def end_game(self):
+		if self.score > self.highscore:
+			self.highscore = self.score
+			self.save_highscore()
+		self.paused = True
+		self.menu = MenuScene('Game Over', 'Highscore: %i' % self.highscore, ['New Game'])
+		self.present_modal_scene(self.menu)
 		
 	def show_start_menu(self):
 		self.paused = True
@@ -120,8 +123,9 @@ class Game (Scene):
 			self.new_game()
 	
 	def move_ship(self):
-		dx = self.player_target - self.player.position.x
-		self.player.position += dx, 0
+		for ship in list(self.players):
+			dx = self.player_target - ship.position.x
+			ship.position += dx, 0
 	
 	def touch_began(self, touch):
 		x, y = touch.location
