@@ -24,26 +24,30 @@ class Game (Scene):
 			
 		self.timer = 0
 		self.speed = 2.0
-		self.lives_left = 3
 		time_font = ('Avenir Next Condensed', 32)
 		self.time_label = LabelNode('00:00', font=time_font, parent=self)
 		self.time_label.anchor_point = (0.5, 1)
 		self.time_label.position = (self.size.w/2, self.size.h-16)
-		self.start_time = self.t
+
+		turn = SpriteNode('plf:Ground_PlanetHill_left', position=(self.size.w/2, self.size.h/2), parent=self)
+		turn.rotation = -math.pi/2
 		
 		self.highscore = self.load_highscore()
 		self.show_start_menu()
 	
 	def new_game(self):
+		self.wall_dist = (4*self.size.w) / 10
 		self.lives_left = 3
 		self.score = 0
 		self.game_over = False
 		self.players = []
 		self.spawn_player()
+		self.time_label.text = '00:00'
+		self.start_time = self.t
 		
 	def load_highscore(self):
 		try:
-			with open('.Match3Highscore', 'r') as f:
+			with open('.MazeRun_highscore', 'r') as f:
 				return int(f.read())
 		except:
 			return 0
@@ -52,7 +56,8 @@ class Game (Scene):
 		self.move_ship()
 		self.update_walls()
 		self.check_wall_collision()
-		sec_in = int(self.t - self.start_time)
+		self.score = int(self.t - self.start_time)
+		sec_in = self.score
 		self.time_label.text = '%02d:%02d' % (sec_in/60, sec_in%60)
 		
 	def update_walls(self):
@@ -64,9 +69,15 @@ class Game (Scene):
 	def spawn_walls(self, y=None):
 		if y is None:
 			y = self.size.h+8
-		
-		l_tile = SpriteNode('plf:Ground_DirtCenter', position=(self.wall_center - self.wall_dist, y))
-		r_tile = SpriteNode('plf:Ground_DirtCenter', position=(self.wall_center + self.wall_dist, y))
+		if y == self.size.h+8 and random.random() < 0.3:
+			print("Turning")
+			self.wall_dist+=32
+			turn = SpriteNode('plf:Ground_PlanetHill_left', position=(self.wall_center - self.wall_dist, y))
+			turn.rotation = math.pi/2
+		l_tile = SpriteNode('plf:Ground_PlanetMid', position=(self.wall_center - self.wall_dist, y))
+		l_tile.rotation=-math.pi/2
+		r_tile = SpriteNode('plf:Ground_PlanetMid', position=(self.wall_center + self.wall_dist, y))
+		r_tile.rotation=math.pi/2
 		self.l_wall.add_child(l_tile)
 		self.r_wall.add_child(r_tile)
 		self.walls.append(l_tile)
@@ -76,6 +87,9 @@ class Game (Scene):
 		dy = -1*self.speed
 		for tile in self.walls:
 			tile.position += 0, dy
+			if tile.position.y < -32:
+				tile.remove_from_parent()
+				self.walls.remove(tile)
 			
 	def check_wall_collision(self):
 		for ship in self.players:
@@ -85,20 +99,20 @@ class Game (Scene):
 				self.player_crash(ship)
 	
 	def player_crash(self, p):
+		sound.play_effect('digital:ZapThreeToneDown')
 		p.remove_from_parent()
 		self.players.remove(p)
 		self.lives_left -= 1
-		print(self.lives_left)
 		if self.lives_left == 0:
 			self.end_game()
 		else:
+			#After a delay, respawn
 			self.run_action(A.sequence(A.wait(2), A.call(self.spawn_player)))
 		
 	def spawn_player(self):
 		new_player = SpriteNode('spc:PlayerLife1Blue', parent=self)
 		new_player.anchor_point = (0.5, 0)
 		new_player.position = (self.size.w/2, 16)
-		print("Spawn player at "+str(new_player.position))
 		self.player_target = self.size.w/2
 		self.players.append(new_player)
 		
@@ -107,12 +121,16 @@ class Game (Scene):
 			self.highscore = self.score
 			self.save_highscore()
 		self.paused = True
-		self.menu = MenuScene('Game Over', 'Highscore: %i' % self.highscore, ['New Game'])
+		self.menu = MenuScene('Game Over', 'Highscore: %02d:%02d' % (self.highscore/60, self.highscore%60), ['New Game'])
 		self.present_modal_scene(self.menu)
 		
+	def save_highscore(self):
+		with open('.MazeRun_highscore', 'w') as f:
+			f.write(str(self.highscore))
+	
 	def show_start_menu(self):
 		self.paused = True
-		self.menu = MenuScene('Maze Run', 'Highscore: %i' % self.highscore, ['Play'])
+		self.menu = MenuScene('Maze Run', 'Highscore: %02d:%02d' % (self.highscore/60, self.highscore%60), ['New Game'])
 		self.present_modal_scene(self.menu)
 		
 	def menu_button_selected(self, title):
