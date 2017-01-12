@@ -69,11 +69,13 @@ class Game (Scene):
 	def spawn_walls(self, y=None):
 		if y is None:
 			y = self.size.h+8
-		if y == self.size.h+8 and random.random() < 0.3:
-			print("Turning")
-			self.wall_dist+=32
-			turn = SpriteNode('plf:Ground_PlanetHill_left', position=(self.wall_center - self.wall_dist, y))
-			turn.rotation = math.pi/2
+			if random.random() < 0.15:
+				if random.random() < 0.5:
+					self.wall_center+=32
+				else:
+					self.wall_center-=32
+				turn = SpriteNode('plf:Ground_PlanetHill_left', position=(self.wall_center - self.wall_dist, y))
+				turn.rotation = math.pi/2
 		l_tile = SpriteNode('plf:Ground_PlanetMid', position=(self.wall_center - self.wall_dist, y))
 		l_tile.rotation=-math.pi/2
 		r_tile = SpriteNode('plf:Ground_PlanetMid', position=(self.wall_center + self.wall_dist, y))
