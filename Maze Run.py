@@ -18,8 +18,8 @@ class Game (Scene):
 		#Center between the walls
 		#Walls are spawned an equal distance in both directions
 		#Will be shifted in the game
-		self.wall_center = self.size.w / 2
-		self.wall_dist = self.size.w - 64
+		self.wall_center = self.size.w/2
+		self.wall_dist = 96 #center-64
 		self.beg_scene()
 			
 		self.timer = 0
@@ -28,19 +28,19 @@ class Game (Scene):
 		self.time_label = LabelNode('00:00', font=time_font, parent=self)
 		self.time_label.anchor_point = (0.5, 1)
 		self.time_label.position = (self.size.w/2, self.size.h-16)
+		self.time_label.z_position = 1
 		
 		self.highscore = self.load_highscore()
 		self.show_start_menu()
 		
 	def beg_scene(self):
 		y = 32
-		while y < self.size.h:
-			self.spawn_walls(y=y, name=iWall)
-			self.spawn_walls(x=64, y=y, name=xWall)
+		while y < self.size.h+64:
+			self.spawn_walls(y=y)
 			y += 64
 	
 	def new_game(self):
-		self.wall_dist = (4*self.size.w) / 10
+		self.wall_dist = 96
 		self.lives_left = 3
 		self.score = 0
 		self.game_over = False
@@ -65,21 +65,20 @@ class Game (Scene):
 		self.time_label.text = '%02d:%02d' % (sec_in/60, sec_in%60)
 		
 	def update_walls(self):
-		if self.timer % 16 == 0:
+		if self.timer % 64 == 0:
+			self.spawn_walls()
+			self.spawn_walls()
 			#Time to make a new row
-			if random.random() < 0.15:
+			if random.random() < 0.33:
 				#Turn is happening
-				if random.random() < 0.5 and self.can_turn(32):
+				if random.random() < 0.5:
 					self.wall_center += 32
-				elif random.random() > 0.5 and self.can_turn(-32):
+				elif random.random() > 0.5:
 					self.wall_center -= 32
 					
-				x = self.wall_center - 32
-	#			while x > 
-				self.speed = min(3, self.speed+0.05)
+#				self.speed = min(15, self.speed+0.5)
 				
-				
-			self.spawn_walls()
+
 		self.move_walls()
 		self.timer += 1		
 
@@ -88,19 +87,32 @@ class Game (Scene):
 			return True
 		return False
 
-	def spawn_walls(self, x=0, y=None, name=xWall):
+	def spawn_walls(self, y=None):
 		#Not allowed to use 'self' in args
 		if y == None:
-			y = self.size.h+8
+			y = self.size.h+72
+			
+		ledge = SpriteNode(xWall, position=(self.wall_center-self.wall_dist, y), parent=self)
+		redge = SpriteNode(xWall, position=(self.wall_center+self.wall_dist, y), parent=self)
+		ledge.rotation=-math.pi/2
+		redge.rotation=math.pi/2
+		self.walls.append(ledge)
+		self.walls.append(redge)
 		
-		ltile = SpriteNode(name, position=(x, y), parent=self)
-		rtile = SpriteNode(name, position=(self.size.w-x, y), parent=self)
+		t = 1
+		while t <= 3:
+			lx = self.wall_center-self.wall_dist-(64*t)
+			rx = self.wall_center+self.wall_dist+(64*t)
+			ltile = SpriteNode(iWall, position=(lx, y), parent=self)
+			rtile = SpriteNode(iWall, position=(rx, y), parent=self)
 		
-		ltile.rotation=-math.pi/2
-		rtile.rotation=math.pi/2
+			ltile.rotation=-math.pi/2
+			rtile.rotation=math.pi/2
 		
-		self.walls.append(ltile)
-		self.walls.append(rtile)
+			self.walls.append(ltile)
+			self.walls.append(rtile)
+			
+			t+=1
 		
 	def move_walls(self):
 		dy = -1*self.speed
@@ -112,9 +124,9 @@ class Game (Scene):
 			
 	def check_wall_collision(self):
 		for ship in self.players:
-			if ship.position.x-ship.size[0]/2 < 96:
+			if ship.position.x-ship.size[0]/2 < self.wall_center-self.wall_dist:
 				self.player_crash(ship)
-			elif ship.position.x+ship.size[0]/2 > self.size.w-96:
+			elif ship.position.x+ship.size[0]/2 > self.wall_center+self.wall_dist:
 				self.player_crash(ship)
 	
 	def player_crash(self, p):
