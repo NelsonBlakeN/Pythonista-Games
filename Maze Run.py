@@ -69,22 +69,23 @@ class Game (Scene):
 			self.spawn_walls()
 			self.spawn_walls()
 			#Time to make a new row
-			if random.random() < 0.33:
+			if random.random() < 0.45:
 				#Turn is happening
-				if random.random() < 0.5:
+				if random.random() < 0.5 and self.can_turn(96):
 					self.wall_center += 32
-				elif random.random() > 0.5:
+				elif random.random() > 0.5 and self.can_turn(-96):
 					self.wall_center -= 32
 					
 #				self.speed = min(15, self.speed+0.5)
 				
-
 		self.move_walls()
 		self.timer += 1		
 
 	def can_turn(self, dir):
 		if(self.wall_center+dir > 0 and self.wall_center+dir < self.size.w):
+			print("Could turn")
 			return True
+		print("Couldnt turn")
 		return False
 
 	def spawn_walls(self, y=None):
