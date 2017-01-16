@@ -18,12 +18,7 @@ class Game (Scene):
 		#Center between the walls
 		#Walls are spawned an equal distance in both directions
 		#Will be shifted in the game
-		self.wall_center = self.size.w/2
-		self.wall_dist = 96 #center-64
-		self.beg_scene()
-			
-		self.timer = 0
-		self.speed = 1.0
+
 		time_font = ('Avenir Next Condensed', 32)
 		self.time_label = LabelNode('00:00', font=time_font, parent=self)
 		self.time_label.anchor_point = (0.5, 1)
@@ -41,13 +36,16 @@ class Game (Scene):
 	
 	def new_game(self):
 		self.wall_dist = 96
+		self.wall_center = self.size.w/2
+		self.timer = 0
+		self.speed = 1.0
 		self.lives_left = 3
 		self.score = 0
 		self.game_over = False
-		self.players = []
 		self.spawn_player()
 		self.time_label.text = '00:00'
 		self.start_time = self.t
+		self.beg_scene()
 		
 	def load_highscore(self):
 		try:
@@ -59,14 +57,13 @@ class Game (Scene):
 	def update(self):
 		self.move_ship()
 		self.update_walls()
-		self.check_wall_collision()
+#		self.check_wall_collision()
 		self.score = int(self.t - self.start_time)
 		sec_in = self.score
 		self.time_label.text = '%02d:%02d' % (sec_in/60, sec_in%60)
 		
 	def update_walls(self):
 		if self.timer % 64 == 0:
-			self.spawn_walls()
 			self.spawn_walls()
 			#Time to make a new row
 			if random.random() < 0.45:
@@ -124,29 +121,34 @@ class Game (Scene):
 				self.walls.remove(tile)
 			
 	def check_wall_collision(self):
-		for ship in self.players:
-			if ship.position.x-ship.size[0]/2 < self.wall_center-self.wall_dist:
-				self.player_crash(ship)
-			elif ship.position.x+ship.size[0]/2 > self.wall_center+self.wall_dist:
-				self.player_crash(ship)
+		pEdgeL = self.player.position.x-self.player.size[0]/2
+		pEdgeR = self.player.position.x+self.player.size[0]/2
+		wEdgeL = self.wall_center-self.wall_dist
+		wEdgeR = self.wall_center+self.wall_dist
+		
+		if pEdgeL < wEdgeL:
+			print("Crashed")
+#			self.player_crash(self.player)
+		elif pEdgeR > wEdgeR:
+			print("Crashed")
+#			self.player_crash(self.player)
 	
-	def player_crash(self, p):
-		sound.play_effect('digital:ZapThreeToneDown')
-		p.remove_from_parent()
-		self.players.remove(p)
-		self.lives_left -= 1
-		if self.lives_left == 0:
-			self.end_game()
-		else:
+#	def player_crash(self, p):
+#		sound.play_effect('digital:ZapThreeToneDown')
+#		p.remove_from_parent()
+#		self.lives_left -= 1
+#		if self.lives_left == 0:
+#			self.end_game()
+#		else:
 			#After a delay, respawn
-			self.run_action(A.sequence(A.wait(2), A.call(self.spawn_player)))
+#			self.run_action(A.sequence(A.wait(2), A.call(self.spawn_player)))
 		
 	def spawn_player(self):
-		new_player = SpriteNode('spc:PlayerLife1Blue', parent=self)
-		new_player.anchor_point = (0.5, 0)
-		new_player.position = (self.size.w/2, 16)
+		self.player = SpriteNode('spc:PlayerLife1Blue', parent=self)
+		self.player.anchor_point = (0.5, 0)
+		self.player.position = (self.size.w/2, 128)
 		self.player_target = self.size.w/2
-		self.players.append(new_player)
+		self.player.z_position = 1
 		
 	def end_game(self):
 		if self.score > self.highscore:
@@ -173,9 +175,8 @@ class Game (Scene):
 			self.new_game()
 	
 	def move_ship(self):
-		for ship in list(self.players):
-			dx = self.player_target - ship.position.x
-			ship.position += dx, 0
+		dx = self.player_target - self.player.position.x
+		self.player.position += dx, 0
 	
 	def touch_began(self, touch):
 		x, y = touch.location
