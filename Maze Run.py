@@ -39,7 +39,6 @@ class Game (Scene):
 		self.wall_center = self.size.w/2
 		self.timer = 0
 		self.speed = 1.0
-		self.lives_left = 3
 		self.score = 0
 		self.game_over = False
 		self.spawn_player()
@@ -57,7 +56,7 @@ class Game (Scene):
 	def update(self):
 		self.move_ship()
 		self.update_walls()
-#		self.check_wall_collision()
+		self.check_wall_collision()
 		self.score = int(self.t - self.start_time)
 		sec_in = self.score
 		self.time_label.text = '%02d:%02d' % (sec_in/60, sec_in%60)
@@ -80,9 +79,7 @@ class Game (Scene):
 
 	def can_turn(self, dir):
 		if(self.wall_center+dir > 0 and self.wall_center+dir < self.size.w):
-			print("Could turn")
 			return True
-		print("Couldnt turn")
 		return False
 
 	def spawn_walls(self, y=None):
@@ -121,27 +118,19 @@ class Game (Scene):
 				self.walls.remove(tile)
 			
 	def check_wall_collision(self):
-		pEdgeL = self.player.position.x-self.player.size[0]/2
-		pEdgeR = self.player.position.x+self.player.size[0]/2
-		wEdgeL = self.wall_center-self.wall_dist
-		wEdgeR = self.wall_center+self.wall_dist
+		size_x = self.player.size[0]
+		size_y = self.player.size[1]
+		player_hitbox = Rect(self.player.position.x - size_x/2, 128, size_x, size_y)
 		
-		if pEdgeL < wEdgeL:
-			print("Crashed")
-#			self.player_crash(self.player)
-		elif pEdgeR > wEdgeR:
-			print("Crashed")
-#			self.player_crash(self.player)
+		for wall in list(self.walls):
+			if wall.frame.intersects(player_hitbox):
+				print("Crashed")
+				self.player_crash(self.player)
 	
-#	def player_crash(self, p):
-#		sound.play_effect('digital:ZapThreeToneDown')
-#		p.remove_from_parent()
-#		self.lives_left -= 1
-#		if self.lives_left == 0:
-#			self.end_game()
-#		else:
-			#After a delay, respawn
-#			self.run_action(A.sequence(A.wait(2), A.call(self.spawn_player)))
+	def player_crash(self, p):
+		sound.play_effect('digital:ZapThreeToneDown')
+		p.remove_from_parent()
+		self.end_game()
 		
 	def spawn_player(self):
 		self.player = SpriteNode('spc:PlayerLife1Blue', parent=self)
