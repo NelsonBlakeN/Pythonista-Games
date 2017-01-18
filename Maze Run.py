@@ -35,6 +35,8 @@ class Game (Scene):
 			y += 64
 	
 	def new_game(self):
+		for w in self.walls:
+			w.remove_from_parent()
 		self.wall_dist = 96
 		self.wall_center = self.size.w/2
 		self.timer = 0
@@ -72,7 +74,7 @@ class Game (Scene):
 				elif random.random() > 0.5 and self.can_turn(-96):
 					self.wall_center -= 32
 					
-#				self.speed = min(15, self.speed+0.5)
+				self.speed = min(15, self.speed+0.025)
 				
 		self.move_walls()
 		self.timer += 1		
